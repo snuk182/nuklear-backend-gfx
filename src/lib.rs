@@ -95,7 +95,6 @@ impl <R: gfx::Resources> Drawer<R> {
 	}
 	
 	pub fn draw<F ,B: gfx::CommandBuffer<R>>(&mut self, ctx: &mut NkContext, cfg: &mut NkConvertConfig, encoder: &mut Encoder<R,B>, factory: &mut F, tmp: &mut [u16], width: u32, height: u32, scale: NkVec2) where F: Factory<R> {
-		//use gfx::pso::buffer::Structure;
 		use gfx::IntoIndexBuffer;  
 		
 		let ortho = [[2.0f32 / width as f32, 0.0f32, 				 0.0f32, 0.0f32],
@@ -130,19 +129,12 @@ impl <R: gfx::Resources> Drawer<R> {
 		    buffer: self.ebf.clone().into_index_buffer(factory),
 		};
 		
-		//let mut cmd1 = ctx.draw_begin(&mut dev.cmds);
-		
-		//while let Some(cmd) = cmd1.clone() {
-		
 		for cmd in ctx.draw_command_iterator(&self.cmd) {
 			
 			if cmd.elem_count() < 1 { 
 				continue; 
 			}
 			
-			//println!("{:?}", cmd);
-			
-			 
 			slice.end = slice.start + cmd.elem_count();
 			
 			let id = cmd.texture().id().unwrap();
@@ -172,8 +164,6 @@ impl <R: gfx::Resources> Drawer<R> {
 			encoder.draw(&slice, &self.pso, &data);
 			
 			slice.start = slice.end;
-			
-			//cmd1 = ctx.draw_next(&cmd, &dev.cmds);
 		}	
 	}
 	
