@@ -1,3 +1,3 @@
-# nuklear-rust
+# nuklear-backend-gfx
 
-A highly pre-alpha bindings to https://github.com/vurtun/nuklear immediate GUI library.
+A gfx-rs drawing backend for the bindings for the Nuklear 2D immediate GUI library.
