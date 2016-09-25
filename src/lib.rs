@@ -1,9 +1,6 @@
 extern crate nuklear_rust;
 
 #[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
 extern crate gfx;
 
 use nuklear_rust::{NkHandle, NkContext, NkConvertConfig, NkVec2, NkBuffer, NkDrawVertexLayoutElements, NkDrawVertexLayoutAttribute, NkDrawVertexLayoutFormat};
