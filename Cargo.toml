@@ -2,7 +2,7 @@
 name = "nuklear-backend-gfx"
 version = "0.1.1"
 authors = ["Serhii Plyhun <snuk188@gmail.com>"]
-keywords = ["ui", "widgets", "gui", "interface", "graphics", "gfx"]
+keywords = ["widgets", "gui", "interface", "graphics", "gfx"]
 description = "A gfx-rs drawing backend for Rust wrapper for Nuklear 2D GUI library"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
