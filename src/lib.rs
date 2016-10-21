@@ -40,7 +40,6 @@ impl Default for Vertex {
 pub struct Drawer<R: Resources> {
     cmd: NkBuffer,
     pso: gfx::PipelineState<R, pipe::Meta>,
-    col: RenderTargetView<R, (R8_G8_B8_A8, Unorm)>,
     smp: Sampler<R>,
     tex: Vec<ShaderResourceView<R, [f32; 4]>>,
     vbf: Buffer<R, Vertex>,
@@ -48,6 +47,8 @@ pub struct Drawer<R: Resources> {
     vsz: usize,
     esz: usize,
     vle: NkDrawVertexLayoutElements,
+
+    pub col: RenderTargetView<R, (R8_G8_B8_A8, Unorm)>,
 }
 
 impl<R: gfx::Resources> Drawer<R> {
