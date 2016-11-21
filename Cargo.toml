@@ -1,13 +1,13 @@
 [package]
 name = "nuklear-backend-gfx"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Serhii Plyhun <snuk188@gmail.com>"]
 keywords = ["widgets", "gui", "interface", "graphics", "gfx"]
 description = "A gfx-rs drawing backend for Rust wrapper for Nuklear 2D GUI library"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/snuk182/nuklear-rust.git"
-homepage = "https://github.com/snuk182/nuklear-rust"
+repository = "https://github.com/snuk182/nuklear-backend-gfx.git"
+homepage = "https://github.com/snuk182/nuklear-backend-gfx"
 
 [lib]
 name = "nuklear_backend_gfx"
@@ -15,9 +15,6 @@ path = "src/lib.rs"
 
 [dependencies]
 log = "~0.3"
-gfx_device_gl = "~0.11"
-gfx_window_glutin = "~0.12"
 gfx = "~0.12"
-glutin = "~0.6"
 nuklear-rust = "~0.1"
 
