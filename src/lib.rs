@@ -33,7 +33,6 @@ gfx_defines!{
 	
     pipeline pipe {
 	    vbuf: gfx::VertexBuffer<Vertex> = (),
-	    //proj: gfx::Global<[[f32; 4]; 4]> = "ProjMtx",
 	    tex: gfx::TextureSampler<[f32; 4]> = "Texture",
 	    output: gfx::BlendTarget<super::ColorFormat> = ("Out_Color", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
 	    locals: gfx::ConstantBuffer<Locals> = "Locals",
@@ -177,7 +176,6 @@ impl<R: gfx::Resources> Drawer<R> {
             
             let data = pipe::Data {
                 vbuf: self.vbf.clone(),
-                //proj: ortho,
                 tex: (res, self.smp.clone()),
                 output: self.col.clone(),
                 scissors: sc_rect,
