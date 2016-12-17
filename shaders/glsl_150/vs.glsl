@@ -1,5 +1,7 @@
 #version 150
-uniform mat4 ProjMtx;
+uniform Locals {
+	mat4 ProjMtx;
+};
 in vec2 Position;
 in vec2 TexCoord;
 in vec4 Color;

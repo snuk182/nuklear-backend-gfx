@@ -15,6 +15,11 @@ type DepthFormat = gfx::format::DepthStencil;
 
 pub type ColorFormat = gfx::format::Rgba8;
 
+pub enum GfxBackend {
+	OpenGlsl150,
+	DX11Hlsl,
+}
+
 gfx_defines!{
     vertex Vertex {
 	    pos: [f32; 2] = "Position",
@@ -22,11 +27,16 @@ gfx_defines!{
 	    col: [U8Norm; 4] = "Color",
 	}
 
+	constant Locals {
+		proj: [[f32; 4]; 4] = "ProjMtx",
+	}
+	
     pipeline pipe {
 	    vbuf: gfx::VertexBuffer<Vertex> = (),
-	    proj: gfx::Global<[[f32; 4]; 4]> = "ProjMtx",
+	    //proj: gfx::Global<[[f32; 4]; 4]> = "ProjMtx",
 	    tex: gfx::TextureSampler<[f32; 4]> = "Texture",
 	    output: gfx::BlendTarget<super::ColorFormat> = ("Out_Color", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
+	    locals: gfx::ConstantBuffer<Locals> = "Locals",
 	    scissors: gfx::Scissor = (),
 	}
 }
@@ -44,32 +54,42 @@ pub struct Drawer<R: Resources> {
     tex: Vec<ShaderResourceView<R, [f32; 4]>>,
     vbf: Buffer<R, Vertex>,
     ebf: Buffer<R, u16>,
+    lbf: Buffer<R, Locals>,
     vsz: usize,
     esz: usize,
     vle: NkDrawVertexLayoutElements,
-
+	
     pub col: RenderTargetView<R, (R8_G8_B8_A8, Unorm)>,
 }
 
 impl<R: gfx::Resources> Drawer<R> {
-    pub fn new<F>(factory: &mut F, col: &RenderTargetView<R, (R8_G8_B8_A8, Unorm)>, texture_count: usize, vbo_size: usize, ebo_size: usize, command_buffer: NkBuffer) -> Drawer<R>
+    pub fn new<F>(factory: &mut F, col: &RenderTargetView<R, (R8_G8_B8_A8, Unorm)>, texture_count: usize, vbo_size: usize, ebo_size: usize, command_buffer: NkBuffer, backend: GfxBackend) -> Drawer<R>
         where F: Factory<R>
     {
         use gfx::pso::buffer::Structure;
-
+        
+        let vs: &[u8] = match backend {
+        	GfxBackend::OpenGlsl150 => include_bytes!("../shaders/glsl_150/vs.glsl"),
+        	GfxBackend::DX11Hlsl => include_bytes!("../shaders/hlsl/vs.fx"),
+        };
+        
+        let fs: &[u8] = match backend {
+        	GfxBackend::OpenGlsl150 => include_bytes!("../shaders/glsl_150/fs.glsl"),
+        	GfxBackend::DX11Hlsl => include_bytes!("../shaders/hlsl/ps.fx"),
+        	//_ => &[0u8; 0],
+        };
+        
         Drawer {
             cmd: command_buffer,
             col: col.clone(),
             smp: factory.create_sampler_linear(),
-            pso: factory.create_pipeline_simple(include_bytes!("../shaders/glsl_150/vs.glsl"),
-                                        include_bytes!("../shaders/glsl_150/fs.glsl"),
-                                        pipe::new())
-                .unwrap(),
+            pso: factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap(),
             tex: Vec::with_capacity(texture_count + 1),
             vbf: factory.create_buffer_dynamic::<Vertex>(vbo_size, ::gfx::BufferRole::Vertex, ::gfx::Bind::empty()).unwrap(),
             ebf: factory.create_buffer_dynamic::<u16>(ebo_size, ::gfx::BufferRole::Index, ::gfx::Bind::empty()).unwrap(),
             vsz: vbo_size,
             esz: ebo_size,
+            lbf: factory.create_constant_buffer::<Locals>(1),
             vle: NkDrawVertexLayoutElements::new(&[(NkDrawVertexLayoutAttribute::NK_VERTEX_POSITION, NkDrawVertexLayoutFormat::NK_FORMAT_FLOAT, Vertex::query("Position").unwrap().offset),
                                                    (NkDrawVertexLayoutAttribute::NK_VERTEX_TEXCOORD, NkDrawVertexLayoutFormat::NK_FORMAT_FLOAT, Vertex::query("TexCoord").unwrap().offset),
                                                    (NkDrawVertexLayoutAttribute::NK_VERTEX_COLOR, NkDrawVertexLayoutFormat::NK_FORMAT_R8G8B8A8, Vertex::query("Color").unwrap().offset),
@@ -152,13 +172,16 @@ impl<R: gfx::Resources> Drawer<R> {
             };
 
             let res = self.find_res(id).unwrap();
-
+            
+            encoder.update_constant_buffer(&mut self.lbf, &Locals {proj: ortho});
+            
             let data = pipe::Data {
                 vbuf: self.vbf.clone(),
-                proj: ortho,
+                //proj: ortho,
                 tex: (res, self.smp.clone()),
                 output: self.col.clone(),
                 scissors: sc_rect,
+                locals: self.lbf.clone(),
             };
 
             encoder.draw(&slice, &self.pso, &data);
