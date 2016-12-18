@@ -34,7 +34,7 @@ gfx_defines!{
     pipeline pipe {
 	    vbuf: gfx::VertexBuffer<Vertex> = (),
 	    tex: gfx::TextureSampler<[f32; 4]> = "Texture",
-	    output: gfx::BlendTarget<super::ColorFormat> = ("Out_Color", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
+	    output: gfx::BlendTarget<super::ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
 	    locals: gfx::ConstantBuffer<Locals> = "Locals",
 	    scissors: gfx::Scissor = (),
 	}

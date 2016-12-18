@@ -1,6 +1,4 @@
-//
-
-SamplerState sampler0;
+SamplerState Texture_;
 Texture2D<float4> Texture;
 
 cbuffer Locals {
@@ -25,5 +23,5 @@ PS_INPUT Vertex(float2 pos : Position, float4 col : Color, float2 uv : TexCoord)
 
 float4 Pixel(PS_INPUT input) : SV_Target
 {
-  return input.col * Texture.Sample(sampler0, input.uv);
+  return input.col * Texture.Sample(Texture_, input.uv);
 }
