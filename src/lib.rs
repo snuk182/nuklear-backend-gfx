@@ -6,7 +6,7 @@ extern crate gfx;
 use nuklear_rust::{NkHandle, NkContext, NkConvertConfig, NkVec2, NkBuffer, NkDrawVertexLayoutElements, NkDrawVertexLayoutAttribute, NkDrawVertexLayoutFormat};
 
 use gfx::{Factory, Resources, Encoder};
-use gfx::tex::{Kind, AaMode};
+use gfx::texture::{Kind, AaMode};
 use gfx::format::{R8_G8_B8_A8, Unorm, U8Norm};
 use gfx::handle::{ShaderResourceView, RenderTargetView, Sampler, Buffer};
 use gfx::traits::FactoryExt;
@@ -84,8 +84,8 @@ impl<R: gfx::Resources> Drawer<R> {
             smp: factory.create_sampler_linear(),
             pso: factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap(),
             tex: Vec::with_capacity(texture_count + 1),
-            vbf: factory.create_buffer_dynamic::<Vertex>(vbo_size, ::gfx::BufferRole::Vertex, ::gfx::Bind::empty()).unwrap(),
-            ebf: factory.create_buffer_dynamic::<u16>(ebo_size, ::gfx::BufferRole::Index, ::gfx::Bind::empty()).unwrap(),
+            vbf: factory.create_buffer_persistent::<Vertex>(vbo_size, ::gfx::buffer::Role::Vertex, ::gfx::Bind::empty(), ::gfx::memory::Access::from_bits(0x3).unwrap()).unwrap(),
+            ebf: factory.create_buffer_persistent::<u16>(ebo_size, ::gfx::buffer::Role::Index, ::gfx::Bind::empty(), ::gfx::memory::Access::from_bits(0x3).unwrap()).unwrap(),
             vsz: vbo_size,
             esz: ebo_size,
             lbf: factory.create_constant_buffer::<Locals>(1),
@@ -99,7 +99,7 @@ impl<R: gfx::Resources> Drawer<R> {
     pub fn add_texture<F>(&mut self, factory: &mut F, image: &[u8], width: u32, height: u32) -> NkHandle
         where F: Factory<R>
     {
-        let (_, view) = factory.create_texture_const_u8::<ColorFormat>(Kind::D2(width as u16, height as u16, AaMode::Single),
+        let (_, view) = factory.create_texture_immutable_u8::<ColorFormat>(Kind::D2(width as u16, height as u16, AaMode::Single),
                                                     &[image])
             .unwrap();
 
@@ -119,7 +119,8 @@ impl<R: gfx::Resources> Drawer<R> {
         cfg.set_vertex_size(::std::mem::size_of::<Vertex>());
 
         {
-            let mut rwv = factory.map_buffer_rw(&mut self.vbf);
+        	let mut rwvu = factory.map_buffer_rw(&mut self.vbf).unwrap();
+            let mut rwv = rwvu.read_write();
             let mut rvbuf = unsafe {
                 ::std::slice::from_raw_parts_mut(&mut *rwv as *mut [Vertex] as *mut u8,
                                                  ::std::mem::size_of::<Vertex>() * self.vsz)
@@ -136,7 +137,8 @@ impl<R: gfx::Resources> Drawer<R> {
         }
 
         {
-            let mut rwe = factory.map_buffer_rw(&mut self.ebf);//TODO remove with gfx update
+        	let mut rweu = factory.map_buffer_rw(&mut self.ebf).unwrap();
+            let mut rwe = rweu.read_write();//TODO remove with gfx update
             (&mut *rwe).clone_from_slice(tmp);
         }
 
