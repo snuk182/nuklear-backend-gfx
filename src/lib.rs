@@ -7,6 +7,7 @@ use nuklear_rust::{NkHandle, NkContext, NkConvertConfig, NkVec2, NkBuffer, NkDra
 
 use gfx::{Factory, Resources, Encoder};
 use gfx::texture::{Kind, AaMode};
+use gfx::mapping::WritableOnly;
 use gfx::format::{R8_G8_B8_A8, Unorm, U8Norm};
 use gfx::handle::{ShaderResourceView, RenderTargetView, Sampler, Buffer};
 use gfx::traits::FactoryExt;
@@ -51,8 +52,8 @@ pub struct Drawer<R: Resources> {
     pso: gfx::PipelineState<R, pipe::Meta>,
     smp: Sampler<R>,
     tex: Vec<ShaderResourceView<R, [f32; 4]>>,
-    vbf: Buffer<R, Vertex>,
-    ebf: Buffer<R, u16>,
+    vbf: (Buffer<R, Vertex>, WritableOnly<R, Vertex>),
+    ebf: (Buffer<R, u16>, WritableOnly<R, u16>),
     lbf: Buffer<R, Locals>,
     vsz: usize,
     esz: usize,
@@ -84,8 +85,8 @@ impl<R: gfx::Resources> Drawer<R> {
             smp: factory.create_sampler_linear(),
             pso: factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap(),
             tex: Vec::with_capacity(texture_count + 1),
-            vbf: factory.create_buffer_persistent::<Vertex>(vbo_size, ::gfx::buffer::Role::Vertex, ::gfx::Bind::empty(), ::gfx::memory::Access::from_bits(0x3).unwrap()).unwrap(),
-            ebf: factory.create_buffer_persistent::<u16>(ebo_size, ::gfx::buffer::Role::Index, ::gfx::Bind::empty(), ::gfx::memory::Access::from_bits(0x3).unwrap()).unwrap(),
+            vbf: factory.create_mapped_buffer_writable::<Vertex>(vbo_size, ::gfx::buffer::Role::Vertex, ::gfx::Bind::empty()),
+            ebf: factory.create_mapped_buffer_writable::<u16>(ebo_size, ::gfx::buffer::Role::Index, ::gfx::Bind::empty()),
             vsz: vbo_size,
             esz: ebo_size,
             lbf: factory.create_constant_buffer::<Locals>(1),
@@ -99,16 +100,14 @@ impl<R: gfx::Resources> Drawer<R> {
     pub fn add_texture<F>(&mut self, factory: &mut F, image: &[u8], width: u32, height: u32) -> NkHandle
         where F: Factory<R>
     {
-        let (_, view) = factory.create_texture_immutable_u8::<ColorFormat>(Kind::D2(width as u16, height as u16, AaMode::Single),
-                                                    &[image])
-            .unwrap();
+        let (_, view) = factory.create_texture_immutable_u8::<ColorFormat>(Kind::D2(width as u16, height as u16, AaMode::Single), &[image]).unwrap();
 
         self.tex.push(view);
 
         NkHandle::from_id(self.tex.len() as i32)
     }
 
-    pub fn draw<F, B: gfx::CommandBuffer<R>>(&mut self, ctx: &mut NkContext, cfg: &mut NkConvertConfig, encoder: &mut Encoder<R, B>, factory: &mut F, tmp: &mut [u16], width: u32, height: u32, scale: NkVec2)
+    pub fn draw<F, B: gfx::CommandBuffer<R>>(&mut self, ctx: &mut NkContext, cfg: &mut NkConvertConfig, encoder: &mut Encoder<R, B>, factory: &mut F, width: u32, height: u32, scale: NkVec2)
         where F: Factory<R>
     {
         use gfx::IntoIndexBuffer;
@@ -118,17 +117,17 @@ impl<R: gfx::Resources> Drawer<R> {
         cfg.set_vertex_layout(&self.vle);
         cfg.set_vertex_size(::std::mem::size_of::<Vertex>());
 
-        {
-        	let mut rwvu = factory.map_buffer_rw(&mut self.vbf).unwrap();
-            let mut rwv = rwvu.read_write();
+        {	
+        	let mut rwv = factory.write_mapping(&mut self.vbf.1);
             let mut rvbuf = unsafe {
                 ::std::slice::from_raw_parts_mut(&mut *rwv as *mut [Vertex] as *mut u8,
                                                  ::std::mem::size_of::<Vertex>() * self.vsz)
             };
             let mut vbuf = NkBuffer::with_fixed(&mut rvbuf);
 
+			let mut rwe = factory.write_mapping(&mut self.ebf.1);
             let mut rebuf = unsafe {
-                ::std::slice::from_raw_parts_mut(tmp as *mut [u16] as *mut u8,
+                ::std::slice::from_raw_parts_mut(&mut *rwe as *mut [u16] as *mut u8,
                                                  ::std::mem::size_of::<u16>() * self.esz)
             };
             let mut ebuf = NkBuffer::with_fixed(&mut rebuf);
@@ -136,18 +135,12 @@ impl<R: gfx::Resources> Drawer<R> {
             ctx.convert(&mut self.cmd, &mut vbuf, &mut ebuf, cfg);
         }
 
-        {
-        	let mut rweu = factory.map_buffer_rw(&mut self.ebf).unwrap();
-            let mut rwe = rweu.read_write();//TODO remove with gfx update
-            (&mut *rwe).clone_from_slice(tmp);
-        }
-
         let mut slice = ::gfx::Slice {
             start: 0,
             end: 0,
             base_vertex: 0,
             instances: None,
-            buffer: self.ebf.clone().into_index_buffer(factory),
+            buffer: self.ebf.0.clone().into_index_buffer(factory),
         };
 
         for cmd in ctx.draw_command_iterator(&self.cmd) {
@@ -161,7 +154,7 @@ impl<R: gfx::Resources> Drawer<R> {
             let id = cmd.texture().id().unwrap();
 
             let x = cmd.clip_rect().x * scale.x;
-            let y = (height as f32 - (cmd.clip_rect().y + cmd.clip_rect().h)) * scale.y;
+            let y = cmd.clip_rect().y * scale.y;
             let w = cmd.clip_rect().w * scale.x;
             let h = cmd.clip_rect().h * scale.y;
 
@@ -177,7 +170,7 @@ impl<R: gfx::Resources> Drawer<R> {
             encoder.update_constant_buffer(&mut self.lbf, &Locals {proj: ortho});
             
             let data = pipe::Data {
-                vbuf: self.vbf.clone(),
+                vbuf: self.vbf.0.clone(),
                 tex: (res, self.smp.clone()),
                 output: self.col.clone(),
                 scissors: sc_rect,

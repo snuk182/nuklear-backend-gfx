@@ -1,6 +1,6 @@
 [package]
 name = "nuklear-backend-gfx"
-version = "0.1.5"
+version = "0.2.0"
 authors = ["Serhii Plyhun <snuk188@gmail.com>"]
 keywords = ["widgets", "gui", "interface", "graphics", "gfx"]
 description = "A gfx-rs drawing backend for Rust wrapper for Nuklear 2D GUI library"
@@ -15,6 +15,6 @@ path = "src/lib.rs"
 
 [dependencies]
 log = "~0.3"
-gfx = "~0.13"
+gfx = { version = "~0.13", path = "../gfx/src/render" }
 nuklear-rust = "~0.1"
 
