@@ -58,6 +58,7 @@ pub struct Drawer<R: Resources> {
     esz: usize,
     vle: NkDrawVertexLayoutElements,
 
+    //https://github.com/gfx-rs/gfx/issues/1145
     tmp: Vec<u16>,
 
     pub col: RenderTargetView<R, (R8_G8_B8_A8, Unorm)>,
@@ -93,7 +94,7 @@ impl<R: gfx::Resources> Drawer<R> {
                 .unwrap(),
             ebf: factory.create_buffer::<u16>(ebo_size,
                                       ::gfx::buffer::Role::Index,
-                                      ::gfx::memory::Usage::Dynamic, // Upload
+                                      ::gfx::memory::Usage::Dynamic, // Upload //https://github.com/gfx-rs/gfx/issues/1145
                                       ::gfx::Bind::empty())
                 .unwrap(),
             vsz: vbo_size,
@@ -138,6 +139,7 @@ impl<R: gfx::Resources> Drawer<R> {
             };
             let mut vbuf = NkBuffer::with_fixed(&mut rvbuf);
 
+			//https://github.com/gfx-rs/gfx/issues/1145
 			/*let mut rwe = factory.write_mapping(&mut self.ebf).unwrap();
             let mut rebuf = unsafe {
                 ::std::slice::from_raw_parts_mut(&mut *rwe as *mut [u16] as *mut u8,
