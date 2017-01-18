@@ -87,11 +87,7 @@ impl<R: gfx::Resources> Drawer<R> {
             smp: factory.create_sampler_linear(),
             pso: factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap(),
             tex: Vec::with_capacity(texture_count + 1),
-            vbf: factory.create_buffer::<Vertex>(vbo_size,
-                                         ::gfx::buffer::Role::Vertex,
-                                         ::gfx::memory::Usage::Upload,
-                                         ::gfx::Bind::empty())
-                .unwrap(),
+            vbf: factory.create_upload_buffer::<Vertex>(vbo_size).unwrap(),
             ebf: factory.create_buffer::<u16>(ebo_size,
                                       ::gfx::buffer::Role::Index,
                                       ::gfx::memory::Usage::Dynamic, // Upload //https://github.com/gfx-rs/gfx/issues/1145
