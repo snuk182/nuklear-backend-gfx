@@ -15,6 +15,6 @@ path = "src/lib.rs"
 
 [dependencies]
 log = "~0.3"
-gfx = { version = "~0.13", path = "../gfx/src/render" }
-nuklear-rust = { version = "~0.2", path = "../nuklear-rust" }
+gfx = { version = "~0.13" }
+nuklear-rust = { version = "~0.2" }
 
