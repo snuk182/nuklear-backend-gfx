@@ -11,8 +11,6 @@ use gfx::format::{R8_G8_B8_A8, Unorm, U8Norm};
 use gfx::handle::{ShaderResourceView, RenderTargetView, Sampler, Buffer};
 use gfx::traits::FactoryExt;
 
-type DepthFormat = gfx::format::DepthStencil;
-
 pub type ColorFormat = gfx::format::Rgba8;
 
 pub enum GfxBackend {
