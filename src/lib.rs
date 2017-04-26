@@ -56,9 +56,6 @@ pub struct Drawer<R: Resources> {
     esz: usize,
     vle: NkDrawVertexLayoutElements,
 
-    //https://github.com/gfx-rs/gfx/issues/1145
-    tmp: Vec<u16>,
-
     pub col: RenderTargetView<R, (R8_G8_B8_A8, Unorm)>,
 }
 
@@ -86,11 +83,7 @@ impl<R: gfx::Resources> Drawer<R> {
             pso: factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap(),
             tex: Vec::with_capacity(texture_count + 1),
             vbf: factory.create_upload_buffer::<Vertex>(vbo_size).unwrap(),
-            ebf: factory.create_buffer::<u16>(ebo_size,
-                                      ::gfx::buffer::Role::Index,
-                                      ::gfx::memory::Usage::Dynamic, // Upload //https://github.com/gfx-rs/gfx/issues/1145
-                                      ::gfx::Bind::empty())
-                .unwrap(),
+            ebf: factory.create_upload_buffer::<u16>(ebo_size).unwrap(),
             vsz: vbo_size,
             esz: ebo_size,
             lbf: factory.create_constant_buffer::<Locals>(1),
@@ -99,7 +92,6 @@ impl<R: gfx::Resources> Drawer<R> {
                                                    (NkDrawVertexLayoutAttribute::NK_VERTEX_COLOR, NkDrawVertexLayoutFormat::NK_FORMAT_R8G8B8A8, Vertex::query("Color").unwrap().offset),
                                                    (NkDrawVertexLayoutAttribute::NK_VERTEX_ATTRIBUTE_COUNT, NkDrawVertexLayoutFormat::NK_FORMAT_COUNT, 0u32)]),
 
-            tmp: vec![0u16; ebo_size],
         }
     }
 
@@ -133,21 +125,14 @@ impl<R: gfx::Resources> Drawer<R> {
             };
             let mut vbuf = NkBuffer::with_fixed(&mut rvbuf);
 
-			//https://github.com/gfx-rs/gfx/issues/1145
-			/*let mut rwe = factory.write_mapping(&mut self.ebf).unwrap();
+			let mut rwe = factory.write_mapping(&mut self.ebf).unwrap();
             let mut rebuf = unsafe {
                 ::std::slice::from_raw_parts_mut(&mut *rwe as *mut [u16] as *mut u8,
-                                                 ::std::mem::size_of::<u16>() * self.esz)
-            };*/
-            let mut rebuf = unsafe {
-                ::std::slice::from_raw_parts_mut(self.tmp.as_mut_slice() as *mut [u16] as *mut u8,
                                                  ::std::mem::size_of::<u16>() * self.esz)
             };
             let mut ebuf = NkBuffer::with_fixed(&mut rebuf);
 			
 			ctx.convert(&mut self.cmd, &mut vbuf, &mut ebuf, cfg);
-            
-            let _ = encoder.update_buffer(&self.ebf, self.tmp.as_slice(), 0);
         }
 
         let mut slice = ::gfx::Slice {
