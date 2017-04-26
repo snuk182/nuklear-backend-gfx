@@ -56,11 +56,11 @@ pub struct Drawer<R: Resources> {
     esz: usize,
     vle: NkDrawVertexLayoutElements,
 
-    pub col: RenderTargetView<R, (R8_G8_B8_A8, Unorm)>,
+    pub col: Option<RenderTargetView<R, (R8_G8_B8_A8, Unorm)>>,
 }
 
 impl<R: gfx::Resources> Drawer<R> {
-    pub fn new<F>(factory: &mut F, col: &RenderTargetView<R, (R8_G8_B8_A8, Unorm)>, texture_count: usize, vbo_size: usize, ebo_size: usize, command_buffer: NkBuffer, backend: GfxBackend) -> Drawer<R>
+    pub fn new<F>(factory: &mut F, col: RenderTargetView<R, (R8_G8_B8_A8, Unorm)>, texture_count: usize, vbo_size: usize, ebo_size: usize, command_buffer: NkBuffer, backend: GfxBackend) -> Drawer<R>
         where F: Factory<R>
     {
         use gfx::pso::buffer::Structure;
@@ -78,7 +78,7 @@ impl<R: gfx::Resources> Drawer<R> {
 
         Drawer {
             cmd: command_buffer,
-            col: col.clone(),
+            col: Some(col),
             smp: factory.create_sampler_linear(),
             pso: factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap(),
             tex: Vec::with_capacity(texture_count + 1),
@@ -111,6 +111,10 @@ impl<R: gfx::Resources> Drawer<R> {
         where F: Factory<R>
     {
         use gfx::IntoIndexBuffer;
+        
+        if self.col.clone().is_none() {
+        	return;
+        }
 
         let ortho = [[2.0f32 / width as f32, 0.0f32, 0.0f32, 0.0f32], [0.0f32, -2.0f32 / height as f32, 0.0f32, 0.0f32], [0.0f32, 0.0f32, -1.0f32, 0.0f32], [-1.0f32, 1.0f32, 0.0f32, 1.0f32]];
 
@@ -172,7 +176,7 @@ impl<R: gfx::Resources> Drawer<R> {
             let data = pipe::Data {
                 vbuf: self.vbf.clone(),
                 tex: (res, self.smp.clone()),
-                output: self.col.clone(),
+                output: self.col.clone().unwrap(),
                 scissors: sc_rect,
                 locals: self.lbf.clone(),
             };
