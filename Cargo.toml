@@ -16,5 +16,5 @@ path = "src/lib.rs"
 [dependencies]
 log = "~0.3"
 gfx = "~0.15"
-nuklear-rust = {version = "~0.3", path = "../nuklear-rust"}
+nuklear-rust = "~0.3"
 
