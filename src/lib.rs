@@ -6,7 +6,7 @@ extern crate gfx;
 use nuklear_rust::{NkHandle, NkContext, NkConvertConfig, NkVec2, NkBuffer, NkDrawVertexLayoutElements, NkDrawVertexLayoutAttribute, NkDrawVertexLayoutFormat};
 
 use gfx::{Factory, Resources, Encoder};
-use gfx::texture::{Kind, AaMode};
+use gfx::texture::{Kind, AaMode, Mipmap};
 use gfx::format::{R8_G8_B8_A8, Unorm, U8Norm};
 use gfx::handle::{ShaderResourceView, RenderTargetView, Sampler, Buffer};
 use gfx::traits::FactoryExt;
@@ -32,7 +32,7 @@ gfx_defines!{
     pipeline pipe {
 	    vbuf: gfx::VertexBuffer<Vertex> = (),
 	    tex: gfx::TextureSampler<[f32; 4]> = "Texture",
-	    output: gfx::BlendTarget<super::ColorFormat> = ("Target0", gfx::state::MASK_ALL, gfx::preset::blend::ALPHA),
+	    output: gfx::BlendTarget<super::ColorFormat> = ("Target0", gfx::state::ColorMask::all(), gfx::preset::blend::ALPHA),
 	    locals: gfx::ConstantBuffer<Locals> = "Locals",
 	    scissors: gfx::Scissor = (),
 	}
@@ -80,7 +80,9 @@ impl<R: gfx::Resources> Drawer<R> {
             cmd: command_buffer,
             col: Some(col),
             smp: factory.create_sampler_linear(),
-            pso: factory.create_pipeline_simple(vs, fs, pipe::new()).unwrap(),
+            pso: factory
+                .create_pipeline_simple(vs, fs, pipe::new())
+                .unwrap(),
             tex: Vec::with_capacity(texture_count + 1),
             vbf: factory.create_upload_buffer::<Vertex>(vbo_size).unwrap(),
             ebf: factory.create_upload_buffer::<u16>(ebo_size).unwrap(),
@@ -91,14 +93,15 @@ impl<R: gfx::Resources> Drawer<R> {
                                                    (NkDrawVertexLayoutAttribute::NK_VERTEX_TEXCOORD, NkDrawVertexLayoutFormat::NK_FORMAT_FLOAT, Vertex::query("TexCoord").unwrap().offset),
                                                    (NkDrawVertexLayoutAttribute::NK_VERTEX_COLOR, NkDrawVertexLayoutFormat::NK_FORMAT_R8G8B8A8, Vertex::query("Color").unwrap().offset),
                                                    (NkDrawVertexLayoutAttribute::NK_VERTEX_ATTRIBUTE_COUNT, NkDrawVertexLayoutFormat::NK_FORMAT_COUNT, 0u32)]),
-
         }
     }
 
     pub fn add_texture<F>(&mut self, factory: &mut F, image: &[u8], width: u32, height: u32) -> NkHandle
         where F: Factory<R>
     {
-        let (_, view) = factory.create_texture_immutable_u8::<ColorFormat>(Kind::D2(width as u16, height as u16, AaMode::Single),
+        let (_, view) = factory
+            .create_texture_immutable_u8::<ColorFormat>(Kind::D2(width as u16, height as u16, AaMode::Single),
+                                                        Mipmap::Provided,
                                                         &[image])
             .unwrap();
 
@@ -111,32 +114,35 @@ impl<R: gfx::Resources> Drawer<R> {
         where F: Factory<R>
     {
         use gfx::IntoIndexBuffer;
-        
+
         if self.col.clone().is_none() {
-        	return;
+            return;
         }
 
-        let ortho = [[2.0f32 / width as f32, 0.0f32, 0.0f32, 0.0f32], [0.0f32, -2.0f32 / height as f32, 0.0f32, 0.0f32], [0.0f32, 0.0f32, -1.0f32, 0.0f32], [-1.0f32, 1.0f32, 0.0f32, 1.0f32]];
+        let ortho = [[2.0f32 / width as f32, 0.0f32, 0.0f32, 0.0f32],
+                     [0.0f32, -2.0f32 / height as f32, 0.0f32, 0.0f32],
+                     [0.0f32, 0.0f32, -1.0f32, 0.0f32],
+                     [-1.0f32, 1.0f32, 0.0f32, 1.0f32]];
 
         cfg.set_vertex_layout(&self.vle);
         cfg.set_vertex_size(::std::mem::size_of::<Vertex>());
 
-        {	
-        	let mut rwv = factory.write_mapping(&mut self.vbf).unwrap();
+        {
+            let mut rwv = factory.write_mapping(&mut self.vbf).unwrap();
             let mut rvbuf = unsafe {
                 ::std::slice::from_raw_parts_mut(&mut *rwv as *mut [Vertex] as *mut u8,
                                                  ::std::mem::size_of::<Vertex>() * self.vsz)
             };
             let mut vbuf = NkBuffer::with_fixed(&mut rvbuf);
 
-			let mut rwe = factory.write_mapping(&mut self.ebf).unwrap();
+            let mut rwe = factory.write_mapping(&mut self.ebf).unwrap();
             let mut rebuf = unsafe {
                 ::std::slice::from_raw_parts_mut(&mut *rwe as *mut [u16] as *mut u8,
                                                  ::std::mem::size_of::<u16>() * self.esz)
             };
             let mut ebuf = NkBuffer::with_fixed(&mut rebuf);
-			
-			ctx.convert(&mut self.cmd, &mut vbuf, &mut ebuf, cfg);
+
+            ctx.convert(&mut self.cmd, &mut vbuf, &mut ebuf, cfg);
         }
 
         let mut slice = ::gfx::Slice {
