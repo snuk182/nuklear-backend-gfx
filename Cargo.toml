@@ -16,5 +16,7 @@ path = "src/lib.rs"
 [dependencies]
 log = "~0.3"
 gfx = "~0.17"
-nuklear-rust = "~0.3"
+nuklear-rust = "~0.4"
 
+[patch.crates-io]
+nuklear-rust = { path = "../nuklear-rust" }
