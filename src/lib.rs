@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))] // TODO later
+
 extern crate nuklear;
 
 #[macro_use]
@@ -13,6 +15,7 @@ use gfx::{Encoder, Factory, Resources};
 
 pub type ColorFormat = gfx::format::Rgba8;
 
+#[derive(Debug,Clone,Copy,PartialEq,Eq)]
 pub enum GfxBackend {
     OpenGlsl150,
     DX11Hlsl,
@@ -129,11 +132,11 @@ impl<R: gfx::Resources> Drawer<R> {
         cfg.set_vertex_size(::std::mem::size_of::<Vertex>());
 
         {
-            let mut rwv = factory.write_mapping(&mut self.vbf).unwrap();
+            let mut rwv = factory.write_mapping(&self.vbf).unwrap();
             let mut rvbuf = unsafe { ::std::slice::from_raw_parts_mut(&mut *rwv as *mut [Vertex] as *mut u8, ::std::mem::size_of::<Vertex>() * self.vsz) };
             let mut vbuf = Buffer::with_fixed(&mut rvbuf);
 
-            let mut rwe = factory.write_mapping(&mut self.ebf).unwrap();
+            let mut rwe = factory.write_mapping(&self.ebf).unwrap();
             let mut rebuf = unsafe { ::std::slice::from_raw_parts_mut(&mut *rwe as *mut [u16] as *mut u8, ::std::mem::size_of::<u16>() * self.esz) };
             let mut ebuf = Buffer::with_fixed(&mut rebuf);
 
@@ -148,7 +151,7 @@ impl<R: gfx::Resources> Drawer<R> {
             buffer: self.ebf.clone().into_index_buffer(factory),
         };
 
-        encoder.update_constant_buffer(&mut self.lbf, &Locals { proj: ortho });
+        encoder.update_constant_buffer(&self.lbf, &Locals { proj: ortho });
 
         for cmd in ctx.draw_command_iterator(&self.cmd) {
             if cmd.elem_count() < 1 {
@@ -188,12 +191,10 @@ impl<R: gfx::Resources> Drawer<R> {
     }
 
     fn find_res(&self, id: i32) -> Option<ShaderResourceView<R, [f32; 4]>> {
-        let mut ret = None;
-
         if id > 0 && id as usize <= self.tex.len() {
-            ret = Some(self.tex[(id - 1) as usize].clone());
+            Some(self.tex[(id - 1) as usize].clone())
+        } else {
+            None
         }
-
-        ret
     }
 }
