@@ -1,7 +1,5 @@
 #![cfg_attr(feature = "cargo-clippy", allow(too_many_arguments))] // TODO later
 
-extern crate nuklear;
-
 #[macro_use]
 extern crate gfx;
 

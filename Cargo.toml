@@ -8,6 +8,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/snuk182/nuklear-backend-gfx.git"
 homepage = "https://github.com/snuk182/nuklear-backend-gfx"
+edition = "2018"
 
 [lib]
 name = "nuklear_backend_gfx"
