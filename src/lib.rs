@@ -5,9 +5,9 @@ extern crate nuklear;
 #[macro_use]
 extern crate gfx;
 
-use nuklear::{Buffer, Context, ConvertConfig, DrawVertexLayoutAttribute, DrawVertexLayoutElements, DrawVertexLayoutFormat, Handle, Vec2};
+use nuklear::{Buffer, Context, ConvertConfig, DrawVertexLayoutAttribute, DrawVertexLayoutElements, DrawVertexLayoutFormat, Handle, Size, Vec2};
 
-use gfx::format::{R8_G8_B8_A8, U8Norm, Unorm};
+use gfx::format::{U8Norm, Unorm, R8_G8_B8_A8};
 use gfx::handle::{Buffer as GfxBuffer, RenderTargetView, Sampler, ShaderResourceView};
 use gfx::texture::{AaMode, Kind, Mipmap};
 use gfx::traits::FactoryExt;
@@ -15,13 +15,13 @@ use gfx::{Encoder, Factory, Resources};
 
 pub type ColorFormat = gfx::format::Rgba8;
 
-#[derive(Debug,Clone,Copy,PartialEq,Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GfxBackend {
     OpenGlsl150,
     DX11Hlsl,
 }
 
-gfx_defines!{
+gfx_defines! {
     vertex Vertex {
         pos: [f32; 2] = "Position",
         tex: [f32; 2] = "TexCoord",
@@ -92,10 +92,10 @@ impl<R: gfx::Resources> Drawer<R> {
             esz: ebo_size,
             lbf: factory.create_constant_buffer::<Locals>(1),
             vle: DrawVertexLayoutElements::new(&[
-                (DrawVertexLayoutAttribute::NK_VERTEX_POSITION, DrawVertexLayoutFormat::NK_FORMAT_FLOAT, Vertex::query("Position").unwrap().offset),
-                (DrawVertexLayoutAttribute::NK_VERTEX_TEXCOORD, DrawVertexLayoutFormat::NK_FORMAT_FLOAT, Vertex::query("TexCoord").unwrap().offset),
-                (DrawVertexLayoutAttribute::NK_VERTEX_COLOR, DrawVertexLayoutFormat::NK_FORMAT_R8G8B8A8, Vertex::query("Color").unwrap().offset),
-                (DrawVertexLayoutAttribute::NK_VERTEX_ATTRIBUTE_COUNT, DrawVertexLayoutFormat::NK_FORMAT_COUNT, 0u32),
+                (DrawVertexLayoutAttribute::Position, DrawVertexLayoutFormat::Float, Vertex::query("Position").unwrap().offset as Size),
+                (DrawVertexLayoutAttribute::TexCoord, DrawVertexLayoutFormat::Float, Vertex::query("TexCoord").unwrap().offset as Size),
+                (DrawVertexLayoutAttribute::Color, DrawVertexLayoutFormat::R8G8B8A8, Vertex::query("Color").unwrap().offset as Size),
+                (DrawVertexLayoutAttribute::AttributeCount, DrawVertexLayoutFormat::Count, 0),
             ]),
         }
     }
@@ -129,7 +129,7 @@ impl<R: gfx::Resources> Drawer<R> {
         ];
 
         cfg.set_vertex_layout(&self.vle);
-        cfg.set_vertex_size(::std::mem::size_of::<Vertex>());
+        cfg.set_vertex_size(::std::mem::size_of::<Vertex>() as Size);
 
         {
             let mut rwv = factory.write_mapping(&self.vbf).unwrap();
